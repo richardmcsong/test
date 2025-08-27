@@ -1,0 +1,38 @@
+# Docker ignore file
+.git
+.gitignore
+README.md
+.env
+.env.example
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Local development files
+data/
+credentials/
+tests/
+.pytest_cache/
+
+# Node modules if any
+node_modules/
+npm-debug.log*
