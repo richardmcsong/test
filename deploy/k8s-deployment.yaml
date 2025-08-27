@@ -1,0 +1,95 @@
+# Kubernetes deployment for Aria AI Concierge
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aria-concierge
+  labels:
+    app: aria-concierge
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: aria-concierge
+  template:
+    metadata:
+      labels:
+        app: aria-concierge
+    spec:
+      containers:
+      - name: aria-concierge
+        image: aria-concierge:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8000"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: aria-secrets
+              key: database-url
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aria-secrets
+              key: openai-api-key
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aria-concierge-service
+spec:
+  selector:
+    app: aria-concierge
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
+  type: LoadBalancer
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aria-concierge-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - aria.yourdomain.com
+    secretName: aria-tls
+  rules:
+  - host: aria.yourdomain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: aria-concierge-service
+            port:
+              number: 80

@@ -1,0 +1,49 @@
+# Docker Compose for Aria AI Concierge
+version: '3.8'
+
+services:
+  aria-concierge:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./data/aria_concierge.db
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=False
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./credentials:/app/credentials
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Optional: Add PostgreSQL for production
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=aria_concierge
+      - POSTGRES_USER=aria
+      - POSTGRES_PASSWORD=secure_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    profiles: ["with-db"]
+
+  # Optional: Add Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    profiles: ["with-cache"]
+
+volumes:
+  postgres_data:
